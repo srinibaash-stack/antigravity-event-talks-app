@@ -1339,3 +1339,43 @@ input:checked + .slider:before {
   transform: translateX(16px);
   background-color: var(--bg-primary);
 }
+
+/* Card Unread Marker styles */
+.note-card {
+  position: relative;
+}
+
+.unread-dot {
+  position: absolute;
+  top: 1.45rem;
+  left: 0.75rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--primary-accent);
+  box-shadow: 0 0 8px var(--primary-accent);
+  transition: opacity 0.3s ease;
+  z-index: 10;
+}
+
+/* SVG Circular Progress Ring */
+.progress-ring {
+  transform: rotate(-90deg);
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.progress-ring__circle {
+  transition: stroke-dashoffset 0.1s ease, stroke 0.2s ease;
+}
+
+/* Warning/Danger Textarea borders and glows */
+.tweet-textarea.limit-warning {
+  border-color: #fbbf24 !important;
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15) !important;
+}
+
+.tweet-textarea.limit-danger {
+  border-color: #f87171 !important;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.15) !important;
+}

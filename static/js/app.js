@@ -53,7 +53,8 @@ const elements = {
   xPreviewText: document.getElementById('x-preview-text'),
   xPreviewLinkTitle: document.getElementById('x-preview-link-title'),
   xPreviewLinkDesc: document.getElementById('x-preview-link-desc'),
-  exportCsvButton: document.getElementById('export-csv-button')
+  exportCsvButton: document.getElementById('export-csv-button'),
+  charProgressCircle: document.getElementById('char-progress-circle')
 };
 
 // SVGs for dynamic icons
@@ -284,6 +285,28 @@ function renderNotes() {
   });
 }
 
+// LocalStorage Read/Unread helper
+function markAsRead(noteId) {
+  try {
+    let readNotes = JSON.parse(localStorage.getItem('read_notes') || '[]');
+    if (!readNotes.includes(noteId)) {
+      readNotes.push(noteId);
+      localStorage.setItem('read_notes', JSON.stringify(readNotes));
+      
+      const card = document.getElementById(`card-${noteId}`);
+      if (card) {
+        const dot = card.querySelector('.unread-dot');
+        if (dot) {
+          dot.style.opacity = '0';
+          setTimeout(() => dot.remove(), 300);
+        }
+      }
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
 // Helper to create Note Card DOM
 function createCardDOM(note) {
   const card = document.createElement('article');
@@ -293,6 +316,10 @@ function createCardDOM(note) {
   if (state.selectedNote && state.selectedNote.id === note.id) {
     card.classList.add('selected');
   }
+
+  // Check unread status from local cache
+  const readNotes = JSON.parse(localStorage.getItem('read_notes') || '[]');
+  const isUnread = !readNotes.includes(note.id);
 
   // Set card category theme border left color
   const cat = note.category.toLowerCase();
@@ -308,6 +335,7 @@ function createCardDOM(note) {
   card.style.setProperty('--badge-color', colorVar);
 
   card.innerHTML = `
+    ${isUnread ? '<span class="unread-dot" title="New unread update"></span>' : ''}
     <div class="card-select-indicator">
       <svg viewBox="0 0 24 24">
         <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
@@ -346,6 +374,7 @@ function createCardDOM(note) {
   const copyBtn = card.querySelector('.btn-copy-card');
   copyBtn.addEventListener('click', (e) => {
     e.stopPropagation(); // Prevent card selection click event from firing
+    markAsRead(note.id);
     
     const textToCopy = `Google Cloud BigQuery Update - ${note.date} [${note.category}]\n\n${note.description_text.replace(/\s+/g, ' ').trim()}\n\nSource: ${note.link}`;
     
@@ -370,6 +399,7 @@ function createCardDOM(note) {
     // If user clicks a link or copy button, let it open normally
     if (e.target.tagName === 'A' || e.target.closest('a') || e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
     
+    markAsRead(note.id);
     selectNote(note);
   });
 
@@ -522,6 +552,36 @@ function updateCharCounter() {
   
   if (currentText.trim() === '') {
     elements.btnShareTweet.disabled = true;
+  }
+
+  // Update visual progress circle indicator
+  if (elements.charProgressCircle) {
+    const circumference = 50.26;
+    const ratio = Math.min(twitterLength, 280) / 280;
+    const offset = circumference - (ratio * circumference);
+    elements.charProgressCircle.style.strokeDashoffset = offset;
+    
+    // Transition color based on boundaries
+    if (twitterLength > 280) {
+      elements.charProgressCircle.style.stroke = '#f87171'; // danger (red)
+    } else if (twitterLength > 260) {
+      elements.charProgressCircle.style.stroke = '#fbbf24'; // warning (amber)
+    } else {
+      elements.charProgressCircle.style.stroke = 'var(--primary-accent)'; // normal (sky-blue)
+    }
+  }
+
+  // Update textarea borders
+  if (elements.tweetTextarea) {
+    if (twitterLength > 280) {
+      elements.tweetTextarea.classList.add('limit-danger');
+      elements.tweetTextarea.classList.remove('limit-warning');
+    } else if (twitterLength > 260) {
+      elements.tweetTextarea.classList.add('limit-warning');
+      elements.tweetTextarea.classList.remove('limit-danger');
+    } else {
+      elements.tweetTextarea.classList.remove('limit-warning', 'limit-danger');
+    }
   }
 
   // Update Live X/Twitter Preview box text

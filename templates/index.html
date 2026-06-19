@@ -261,7 +261,13 @@
 
             <!-- Footer Details & Buttons -->
             <div class="composer-footer">
-              <span class="char-counter" id="tweet-char-count">0 / 280</span>
+              <div class="char-counter-wrapper" style="display: flex; align-items: center; gap: 0.5rem;">
+                <svg class="progress-ring" width="20" height="20">
+                  <circle class="progress-ring__circle-bg" stroke="var(--border-color)" stroke-width="2.5" fill="transparent" r="8" cx="10" cy="10"/>
+                  <circle class="progress-ring__circle" id="char-progress-circle" stroke="var(--primary-accent)" stroke-width="2.5" fill="transparent" r="8" cx="10" cy="10" stroke-dasharray="50.26" stroke-dashoffset="50.26"/>
+                </svg>
+                <span class="char-counter" id="tweet-char-count">0 / 280</span>
+              </div>
               <div class="composer-actions">
                 <!-- Copy Text button -->
                 <button class="btn btn-secondary" id="btn-copy-tweet" title="Copy to clipboard">
