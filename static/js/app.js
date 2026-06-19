@@ -53,7 +53,8 @@ const elements = {
   toastContainer: document.getElementById('toast-container'),
   xPreviewText: document.getElementById('x-preview-text'),
   xPreviewLinkTitle: document.getElementById('x-preview-link-title'),
-  xPreviewLinkDesc: document.getElementById('x-preview-link-desc')
+  xPreviewLinkDesc: document.getElementById('x-preview-link-desc'),
+  exportCsvButton: document.getElementById('export-csv-button')
 };
 
 // SVGs for dynamic icons
@@ -102,6 +103,7 @@ function toggleTheme() {
 function setupEventListeners() {
   elements.themeToggle.addEventListener('click', toggleTheme);
   elements.refreshButton.addEventListener('click', refreshNotes);
+  elements.exportCsvButton.addEventListener('click', exportToCSV);
   
   // Search with debounce/input listener
   elements.searchInput.addEventListener('input', (e) => {
@@ -325,6 +327,12 @@ function createCardDOM(note) {
     </div>
     
     <div class="card-footer">
+      <button class="btn-copy-card" title="Copy update text to clipboard">
+        <svg viewBox="0 0 24 24" style="width: 13px; height: 13px; fill: currentColor;">
+          <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+        </svg>
+        <span>Copy</span>
+      </button>
       <a href="${note.link}" class="source-link" target="_blank" rel="noopener noreferrer">
         <span>View Release Log</span>
         <svg viewBox="0 0 24 24">
@@ -334,10 +342,33 @@ function createCardDOM(note) {
     </div>
   `;
 
+  // Copy Card Content Event
+  const copyBtn = card.querySelector('.btn-copy-card');
+  copyBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent card selection click event from firing
+    
+    const textToCopy = `Google Cloud BigQuery Update - ${note.date} [${note.category}]\n\n${note.description_text.replace(/\s+/g, ' ').trim()}\n\nSource: ${note.link}`;
+    
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      copyBtn.querySelector('span').textContent = 'Copied!';
+      copyBtn.classList.add('copied');
+      
+      showToast(`Copied ${note.category} update to clipboard!`, 'success');
+      
+      setTimeout(() => {
+        copyBtn.querySelector('span').textContent = 'Copy';
+        copyBtn.classList.remove('copied');
+      }, 2000);
+    }).catch(err => {
+      console.error('Could not copy card text: ', err);
+      showToast('Failed to copy text.', 'error');
+    });
+  });
+
   // Select Card Event
   card.addEventListener('click', (e) => {
-    // If user clicks a link inside body, let it open normally
-    if (e.target.tagName === 'A' || e.target.closest('a')) return;
+    // If user clicks a link or copy button, let it open normally
+    if (e.target.tagName === 'A' || e.target.closest('a') || e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
     
     selectNote(note);
   });
@@ -544,6 +575,54 @@ function shareTweetOnTwitter() {
   );
   
   showToast('Dispatched composer window!', 'info');
+}
+
+// Export current filtered list of notes to CSV
+function exportToCSV() {
+  if (state.filteredNotes.length === 0) {
+    showToast('No notes available to export.', 'error');
+    return;
+  }
+  
+  const headers = ['ID', 'Date', 'Category', 'Link', 'Description'];
+  
+  const escapeCSV = (text) => {
+    if (text === null || text === undefined) return '';
+    const stringified = String(text);
+    const escaped = stringified.replace(/"/g, '""');
+    if (escaped.includes(',') || escaped.includes('"') || escaped.includes('\n') || escaped.includes('\r')) {
+      return `"${escaped}"`;
+    }
+    return escaped;
+  };
+  
+  const rows = state.filteredNotes.map(note => [
+    note.id,
+    note.date,
+    note.category,
+    note.link,
+    note.description_text.replace(/\s+/g, ' ').trim()
+  ]);
+  
+  const csvContent = [
+    headers.map(escapeCSV).join(','),
+    ...rows.map(row => row.map(escapeCSV).join(','))
+  ].join('\n');
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  
+  const dateStr = new Date().toISOString().slice(0, 10);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `bigquery_release_notes_${state.currentCategory}_${dateStr}.csv`);
+  link.style.visibility = 'hidden';
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  showToast(`Successfully exported ${state.filteredNotes.length} updates to CSV!`, 'success');
 }
 
 // Show custom toast notification
