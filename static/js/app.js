@@ -11,8 +11,7 @@ const state = {
 
 // DOM Elements
 const elements = {
-  themeToggle: document.getElementById('theme-toggle'),
-  themeIcon: document.getElementById('theme-icon'),
+  themeCheckbox: document.getElementById('theme-checkbox'),
   refreshButton: document.getElementById('refresh-button'),
   refreshSpinner: document.getElementById('refresh-spinner'),
   refreshIcon: document.getElementById('refresh-icon'),
@@ -76,32 +75,33 @@ function setupTheme() {
   if (savedTheme === 'light') {
     state.isDarkTheme = false;
     document.body.classList.add('light-theme');
-    elements.themeIcon.innerHTML = icons.moon;
+    if (elements.themeCheckbox) elements.themeCheckbox.checked = true;
   } else {
     state.isDarkTheme = true;
     document.body.classList.remove('light-theme');
-    elements.themeIcon.innerHTML = icons.sun;
+    if (elements.themeCheckbox) elements.themeCheckbox.checked = false;
   }
 }
 
-function toggleTheme() {
-  state.isDarkTheme = !state.isDarkTheme;
-  if (state.isDarkTheme) {
-    document.body.classList.remove('light-theme');
-    localStorage.setItem('theme', 'dark');
-    elements.themeIcon.innerHTML = icons.sun;
-    showToast('Switched to Dark Mode', 'info');
-  } else {
+function toggleTheme(e) {
+  const isLight = e.target.checked;
+  state.isDarkTheme = !isLight;
+  if (isLight) {
     document.body.classList.add('light-theme');
     localStorage.setItem('theme', 'light');
-    elements.themeIcon.innerHTML = icons.moon;
     showToast('Switched to Light Mode', 'info');
+  } else {
+    document.body.classList.remove('light-theme');
+    localStorage.setItem('theme', 'dark');
+    showToast('Switched to Dark Mode', 'info');
   }
 }
 
 // Event Listeners Setup
 function setupEventListeners() {
-  elements.themeToggle.addEventListener('click', toggleTheme);
+  if (elements.themeCheckbox) {
+    elements.themeCheckbox.addEventListener('change', toggleTheme);
+  }
   elements.refreshButton.addEventListener('click', refreshNotes);
   elements.exportCsvButton.addEventListener('click', exportToCSV);
   
